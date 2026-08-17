@@ -6,8 +6,11 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Ensure data folder exists
-const dataDir = path.join(__dirname, '..', 'data');
+// Ensure data folder exists (use /tmp in Vercel serverless environment)
+const dataDir = process.env.VERCEL 
+  ? path.join('/tmp', 'data')
+  : path.join(__dirname, '..', 'data');
+
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }

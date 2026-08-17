@@ -49,7 +49,11 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Start Server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 TaskFlow Production Server is running on http://localhost:${PORT}`);
-});
+// Start Server (only when not in Vercel serverless environment)
+if (!process.env.VERCEL) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 TaskFlow Production Server is running on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
