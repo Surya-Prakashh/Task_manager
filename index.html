@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TaskFlow — Personal Task Manager</title>
+  
+  <!-- SEO & Social Meta -->
+  <meta name="description" content="A personal task manager web application designed to help users organize, track, and manage their daily tasks efficiently across desktop and mobile devices.">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TaskFlow">
+
+  <!-- Manifest & Icons -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+
+  <!-- Google Fonts (Plus Jakarta Sans) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-layout" id="app-layout">
+    
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-header">
+        <div class="brand-logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5" fill="none">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">TaskFlow</span>
+            <span class="brand-badge">PRO</span>
+          </div>
+        </div>
+        <button class="btn-icon btn-sidebar-close" id="btn-sidebar-close" aria-label="Close sidebar">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="sidebar-scrollable">
+        <!-- Main Smart Views -->
+        <div class="sidebar-section">
+          <span class="section-label">Smart Views</span>
+          <nav class="sidebar-nav">
+            <button class="nav-item active" data-view-filter="all">
+              <span class="nav-icon">📥</span>
+              <span class="nav-text">All Tasks</span>
+              <span class="nav-count" id="count-all">0</span>
+            </button>
+            <button class="nav-item" data-view-filter="today">
+              <span class="nav-icon">☀️</span>
+              <span class="nav-text">Today</span>
+              <span class="nav-count" id="count-today">0</span>
+            </button>
+            <button class="nav-item" data-view-filter="upcoming">
+              <span class="nav-icon">🗓️</span>
+              <span class="nav-text">Upcoming</span>
+              <span class="nav-count" id="count-upcoming">0</span>
+            </button>
+            <button class="nav-item" data-view-filter="urgent">
+              <span class="nav-icon">⚡</span>
+              <span class="nav-text">Important</span>
+              <span class="nav-count" id="count-urgent">0</span>
+            </button>
+            <button class="nav-item" data-view-filter="overdue">
+              <span class="nav-icon">⚠️</span>
+              <span class="nav-text">Overdue</span>
+              <span class="nav-count nav-count-danger" id="count-overdue">0</span>
+            </button>
+            <button class="nav-item" data-view-filter="completed">
+              <span class="nav-icon">✅</span>
+              <span class="nav-text">Completed</span>
+              <span class="nav-count" id="count-completed">0</span>
+            </button>
+          </nav>
+        </div>
+
+        <!-- Categories Section -->
+        <div class="sidebar-section">
+          <div class="section-header-flex">
+            <span class="section-label">Categories</span>
+            <button class="btn-icon-sm" id="btn-open-category-modal" title="Add new category">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </button>
+          </div>
+          <div class="categories-list" id="sidebar-categories-list">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- Quick Productivity Widget -->
+        <div class="sidebar-section sidebar-widget-section">
+          <div class="streak-widget">
+            <div class="streak-widget-top">
+              <span class="streak-flame">🔥</span>
+              <div class="streak-info">
+                <span class="streak-title" id="sidebar-streak-count">0 Day Streak</span>
+                <span class="streak-desc">Keep your momentum going!</span>
+              </div>
+            </div>
+            <div class="sidebar-progress-bar">
+              <div class="sidebar-progress-fill" id="sidebar-progress-fill" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn-sidebar-action" id="btn-open-shortcuts" title="Keyboard Shortcuts (?)">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <span>Shortcuts</span>
+        </button>
+        <button class="btn-sidebar-action" id="btn-export-menu" title="Export & Backup">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>Backup</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Sidebar Backdrop (for Mobile) -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <!-- ==================== MAIN CONTENT AREA ==================== -->
+    <main class="app-main">
+      
+      <!-- Top Navbar -->
+      <header class="app-header">
+        <div class="header-left">
+          <button class="btn-icon btn-hamburger" id="btn-toggle-sidebar" aria-label="Toggle Navigation">
+            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          </button>
+          
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="global-search-input" placeholder="Search tasks, tags, notes... (Press '/' to focus)" aria-label="Search tasks">
+            <button class="btn-icon btn-clear-search" id="btn-clear-search" style="display: none;">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <!-- Cloud Sync & Auth Button -->
+          <div class="user-auth-wrap" id="user-auth-wrap">
+            <button class="btn btn-outline btn-sm btn-auth-trigger" id="btn-auth-trigger">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span id="auth-btn-label">Sign In / Sync</span>
+            </button>
+            <div class="user-dropdown-menu" id="user-dropdown-menu" style="display: none;">
+              <div class="user-info-header">
+                <strong id="dropdown-user-name">User Name</strong>
+                <span id="dropdown-user-email">user@email.com</span>
+              </div>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item" id="btn-sync-now">
+                <span>🔄 Sync with Cloud</span>
+              </button>
+              <button class="dropdown-item text-danger" id="btn-logout">
+                <span>🚪 Sign Out</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Focus Timer Quick Pill -->
+          <button class="btn-focus-pill" id="btn-open-focus-modal" title="Open Focus / Pomodoro Timer">
+            <span class="focus-pulse-dot"></span>
+            <span class="focus-pill-text" id="header-focus-timer-text">25:00 Focus</span>
+          </button>
+
+          <!-- Notifications toggle -->
+          <button class="btn-icon" id="btn-toggle-notifications" title="Enable Due Date Notifications">
+            <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          </button>
+
+          <!-- Theme Selector Dropdown -->
+          <div class="theme-selector-wrap">
+            <button class="btn-icon btn-theme" id="btn-theme-toggle" title="Change Visual Theme">
+              <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </button>
+            <div class="theme-menu-dropdown" id="theme-menu-dropdown">
+              <button data-theme-val="dark" class="theme-opt">🌙 Dark Studio</button>
+              <button data-theme-val="midnight" class="theme-opt">🌌 Midnight Blue</button>
+              <button data-theme-val="sunset" class="theme-opt">🌆 Cyber Sunset</button>
+              <button data-theme-val="light" class="theme-opt">☀️ Crisp Light</button>
+            </div>
+          </div>
+
+          <!-- Primary Create Task Button -->
+          <button class="btn btn-primary btn-header-add" id="btn-header-new-task">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>New Task</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- View Control Toolbar -->
+      <section class="view-toolbar">
+        <div class="toolbar-left">
+          <h1 class="view-heading" id="current-view-title">All Tasks</h1>
+          <span class="view-meta-badge" id="current-view-badge">0 tasks</span>
+        </div>
+
+        <div class="toolbar-right">
+          <!-- View Mode Switcher -->
+          <div class="view-mode-tabs" role="tablist">
+            <button class="view-mode-tab active" data-mode="list" role="tab" aria-selected="true" title="List View">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+              <span>List</span>
+            </button>
+            <button class="view-mode-tab" data-mode="board" role="tab" aria-selected="false" title="Kanban Board View">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="7" height="18" rx="1"></rect><rect x="14" y="3" width="7" height="11" rx="1"></rect></svg>
+              <span>Board</span>
+            </button>
+            <button class="view-mode-tab" data-mode="calendar" role="tab" aria-selected="false" title="Calendar View">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              <span>Calendar</span>
+            </button>
+            <button class="view-mode-tab" data-mode="analytics" role="tab" aria-selected="false" title="Productivity & Analytics">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+              <span>Analytics</span>
+            </button>
+          </div>
+
+          <!-- Sort & Priority Filters -->
+          <div class="filter-controls-group" id="filter-controls-group">
+            <select class="select-dropdown" id="sort-select" title="Sort tasks by">
+              <option value="manual">Sort: Custom / Manual</option>
+              <option value="dueDate">Sort: Due Date</option>
+              <option value="priority">Sort: Priority</option>
+              <option value="title">Sort: Alphabetical</option>
+              <option value="createdAt">Sort: Recently Added</option>
+            </select>
+
+            <select class="select-dropdown" id="priority-filter-select" title="Filter by priority">
+              <option value="all">Priority: All</option>
+              <option value="urgent">🔴 Urgent</option>
+              <option value="high">🟠 High</option>
+              <option value="medium">🔵 Medium</option>
+              <option value="low">🟢 Low</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Dynamic Content Container -->
+      <section class="main-scroll-content" id="view-content-container">
+        <!-- Rendered dynamically -->
+      </section>
+
+    </main>
+
+    <!-- ==================== MOBILE BOTTOM NAVIGATION ==================== -->
+    <nav class="mobile-bottom-nav">
+      <button class="mobile-nav-btn active" data-bottom-view="list">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+        <span>Tasks</span>
+      </button>
+      <button class="mobile-nav-btn" data-bottom-view="board">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="7" height="18" rx="1"></rect><rect x="14" y="3" width="7" height="11" rx="1"></rect></svg>
+        <span>Board</span>
+      </button>
+      <button class="mobile-nav-btn-fab" id="btn-mobile-fab" aria-label="Create Task">
+        <svg viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </button>
+      <button class="mobile-nav-btn" data-bottom-view="calendar">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        <span>Calendar</span>
+      </button>
+      <button class="mobile-nav-btn" data-bottom-view="analytics">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+        <span>Stats</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ==================== MODALS & DIALOGS ==================== -->
+
+  <!-- 1. TASK MODAL (Create & Edit) -->
+  <div class="modal-overlay" id="task-modal-overlay">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-task-heading">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-task-heading">New Task</h2>
+        <button class="btn-icon btn-modal-close" id="btn-close-task-modal" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <form id="task-form" class="modal-body">
+        <input type="hidden" id="task-id-input">
+
+        <!-- Title -->
+        <div class="form-group">
+          <label for="task-title-input" class="form-label">Task Title <span class="required">*</span></label>
+          <input type="text" id="task-title-input" class="form-control" placeholder="What needs to be done?" required autofocus>
+        </div>
+
+        <!-- Description / Notes -->
+        <div class="form-group">
+          <label for="task-desc-input" class="form-label">Notes & Description</label>
+          <textarea id="task-desc-input" class="form-control textarea-autoresize" rows="3" placeholder="Add extra details, checklist items, links..."></textarea>
+        </div>
+
+        <!-- Category & Priority Row -->
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label for="task-category-select" class="form-label">Category</label>
+            <select id="task-category-select" class="form-control">
+              <!-- Populated via JS -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Priority</label>
+            <div class="priority-radio-group">
+              <label class="priority-opt priority-opt-urgent">
+                <input type="radio" name="task-priority" value="urgent">
+                <span>🔴 Urgent</span>
+              </label>
+              <label class="priority-opt priority-opt-high">
+                <input type="radio" name="task-priority" value="high">
+                <span>🟠 High</span>
+              </label>
+              <label class="priority-opt priority-opt-medium">
+                <input type="radio" name="task-priority" value="medium" checked>
+                <span>🔵 Med</span>
+              </label>
+              <label class="priority-opt priority-opt-low">
+                <input type="radio" name="task-priority" value="low">
+                <span>🟢 Low</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Due Date & Time -->
+        <div class="form-row-2col">
+          <div class="form-group">
+            <label for="task-due-date-input" class="form-label">Due Date</label>
+            <input type="date" id="task-due-date-input" class="form-control">
+          </div>
+
+          <div class="form-group">
+            <label for="task-due-time-input" class="form-label">Due Time</label>
+            <input type="time" id="task-due-time-input" class="form-control">
+          </div>
+        </div>
+
+        <!-- Reminders & Pin Options -->
+        <div class="form-options-row">
+          <label class="toggle-checkbox-label">
+            <input type="checkbox" id="task-reminder-check" class="toggle-checkbox">
+            <span class="toggle-switch"></span>
+            <span>🔔 Browser Reminder Alert</span>
+          </label>
+
+          <label class="toggle-checkbox-label">
+            <input type="checkbox" id="task-pin-check" class="toggle-checkbox">
+            <span class="toggle-switch"></span>
+            <span>📌 Pin to Top</span>
+          </label>
+        </div>
+
+        <!-- Tags Input -->
+        <div class="form-group">
+          <label for="task-tags-input" class="form-label">Tags (comma-separated)</label>
+          <input type="text" id="task-tags-input" class="form-control" placeholder="e.g. Design, Sprint-4, Urgent">
+        </div>
+
+        <!-- Subtasks Checklist Builder -->
+        <div class="form-group subtasks-builder-group">
+          <div class="subtasks-builder-header">
+            <label class="form-label">Subtasks / Checklist</label>
+            <span class="subtasks-count-badge" id="modal-subtasks-count">0 items</span>
+          </div>
+
+          <div class="subtasks-inputs-list" id="modal-subtasks-list">
+            <!-- Dynamic subtask inputs -->
+          </div>
+
+          <div class="add-subtask-input-row">
+            <input type="text" id="new-subtask-input" class="form-control" placeholder="Add a subtask and press Enter...">
+            <button type="button" class="btn btn-outline btn-sm" id="btn-add-subtask-item">+ Add</button>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-task-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-task">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. FOCUS & POMODORO TIMER OVERLAY -->
+  <div class="modal-overlay" id="focus-modal-overlay">
+    <div class="modal-card focus-modal-card">
+      <div class="focus-modal-header">
+        <h2>Focus Mode</h2>
+        <button class="btn-icon btn-modal-close" id="btn-close-focus-modal">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="focus-modal-body">
+        <!-- Mode Tabs -->
+        <div class="focus-mode-tabs">
+          <button class="focus-mode-btn active" data-focus-mode="pomodoro">Pomodoro (25m)</button>
+          <button class="focus-mode-btn" data-focus-mode="shortBreak">Short Break (5m)</button>
+          <button class="focus-mode-btn" data-focus-mode="longBreak">Long Break (15m)</button>
+        </div>
+
+        <!-- Active Task Badge -->
+        <div class="focus-task-info" id="focus-active-task-info">
+          <span class="focus-task-label">Active Task:</span>
+          <span class="focus-task-name" id="focus-task-title-display">No specific task selected</span>
+        </div>
+
+        <!-- Circular Timer Display -->
+        <div class="focus-circle-wrap">
+          <svg class="focus-svg-ring" width="260" height="260">
+            <circle class="focus-svg-bg" stroke="rgba(255,255,255,0.06)" stroke-width="12" fill="transparent" r="110" cx="130" cy="130" />
+            <circle class="focus-svg-progress" id="focus-svg-progress" stroke="#6366f1" stroke-width="12" stroke-linecap="round" fill="transparent" r="110" cx="130" cy="130" />
+          </svg>
+          <div class="focus-timer-text-wrap">
+            <div class="focus-digits" id="focus-digits-display">25:00</div>
+            <div class="focus-sub-status" id="focus-sub-status">Ready to Focus</div>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="focus-controls">
+          <button class="btn btn-primary btn-lg btn-focus-start" id="btn-focus-toggle">
+            <svg id="focus-play-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <span id="focus-btn-label">Start Session</span>
+          </button>
+          <button class="btn btn-secondary btn-lg" id="btn-focus-reset" title="Reset timer">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+          </button>
+        </div>
+
+        <!-- Sessions summary -->
+        <div class="focus-stats-foot">
+          <span>🍅 Completed Today: <strong id="focus-sessions-counter">0</strong> sessions</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. ADD CATEGORY MODAL -->
+  <div class="modal-overlay" id="category-modal-overlay">
+    <div class="modal-card modal-sm">
+      <div class="modal-header">
+        <h2 class="modal-title">New Category</h2>
+        <button class="btn-icon btn-modal-close" id="btn-close-category-modal">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <form id="category-form" class="modal-body">
+        <div class="form-group">
+          <label for="cat-name-input" class="form-label">Category Name <span class="required">*</span></label>
+          <input type="text" id="cat-name-input" class="form-control" placeholder="e.g. Side Project, Fitness, Reading" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Theme Color</label>
+          <div class="color-picker-palette" id="cat-color-palette">
+            <button type="button" class="color-swatch active" style="--swatch-color: #6366f1" data-color="#6366f1"></button>
+            <button type="button" class="color-swatch" style="--swatch-color: #ec4899" data-color="#ec4899"></button>
+            <button type="button" class="color-swatch" style="--swatch-color: #8b5cf6" data-color="#8b5cf6"></button>
+            <button type="button" class="color-swatch" style="--swatch-color: #3b82f6" data-color="#3b82f6"></button>
+            <button type="button" class="color-swatch" style="--swatch-color: #06b6d4" data-color="#06b6d4"></button>
+            <button type="button" class="color-swatch" style="--swatch-color: #10b981" data-color="#10b981"></button>
+            <button type="button" class="color-swatch" style="--swatch-color: #f59e0b" data-color="#f59e0b"></button>
+            <button type="button" class="color-swatch" style="--swatch-color: #ef4444" data-color="#ef4444"></button>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-cat-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Category</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. BACKUP / EXPORT MODAL -->
+  <div class="modal-overlay" id="backup-modal-overlay">
+    <div class="modal-card modal-sm">
+      <div class="modal-header">
+        <h2 class="modal-title">Data Backup & Export</h2>
+        <button class="btn-icon btn-modal-close" id="btn-close-backup-modal">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body backup-modal-body">
+        <p class="backup-note">Your data is securely persisted on your local browser. Export JSON backups anytime or export CSV files for spreadsheets.</p>
+        
+        <div class="backup-actions-list">
+          <button class="btn btn-outline btn-block" id="btn-action-export-json">
+            <span>💾 Export Full Backup (JSON)</span>
+          </button>
+          <button class="btn btn-outline btn-block" id="btn-action-export-csv">
+            <span>📊 Export Tasks to CSV</span>
+          </button>
+          <label class="btn btn-outline btn-block file-upload-label">
+            <span>📥 Restore from JSON File</span>
+            <input type="file" id="import-json-file-input" accept=".json" style="display: none;">
+          </label>
+          <button class="btn btn-danger btn-block" id="btn-action-reset-defaults">
+            <span>🔄 Reset to Sample Data</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. KEYBOARD SHORTCUTS MODAL -->
+  <div class="modal-overlay" id="shortcuts-modal-overlay">
+    <div class="modal-card modal-sm">
+      <div class="modal-header">
+        <h2 class="modal-title">Keyboard Shortcuts</h2>
+        <button class="btn-icon btn-modal-close" id="btn-close-shortcuts-modal">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="shortcuts-grid">
+          <div class="shortcut-item">
+            <span class="shortcut-key"><kbd>N</kbd></span>
+            <span class="shortcut-desc">Create New Task</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-key"><kbd>/</kbd></span>
+            <span class="shortcut-desc">Focus Search Bar</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-key"><kbd>F</kbd></span>
+            <span class="shortcut-desc">Open Focus Timer</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-key"><kbd>1</kbd> - <kbd>4</kbd></span>
+            <span class="shortcut-desc">Switch Views (List/Board/Cal/Stats)</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-key"><kbd>?</kbd></span>
+            <span class="shortcut-desc">Open Shortcuts Guide</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-key"><kbd>Esc</kbd></span>
+            <span class="shortcut-desc">Close Active Modal / Drawer</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. USER AUTH MODAL (Sign In & Register) -->
+  <div class="modal-overlay" id="auth-modal-overlay">
+    <div class="modal-card modal-sm auth-modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title" id="auth-modal-title">Sign In to TaskFlow</h2>
+        <button class="btn-icon btn-modal-close" id="btn-close-auth-modal">
+          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" id="tab-auth-login">Sign In</button>
+        <button type="button" class="auth-tab" id="tab-auth-register">Create Account</button>
+      </div>
+
+      <form id="auth-form" class="modal-body auth-modal-body">
+        <div class="form-group" id="auth-name-group" style="display: none;">
+          <label for="auth-name-input" class="form-label">Full Name</label>
+          <input type="text" id="auth-name-input" class="form-control" placeholder="John Doe">
+        </div>
+
+        <div class="form-group">
+          <label for="auth-email-input" class="form-label">Email Address <span class="required">*</span></label>
+          <input type="email" id="auth-email-input" class="form-control" placeholder="you@example.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="auth-password-input" class="form-label">Password <span class="required">*</span></label>
+          <input type="password" id="auth-password-input" class="form-control" placeholder="••••••••" required minlength="6">
+        </div>
+
+        <div class="modal-footer auth-modal-footer">
+          <button type="submit" class="btn btn-primary btn-block" id="btn-auth-submit">Sign In</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PWA Install Toast Prompt -->
+  <div class="pwa-install-banner" id="pwa-install-banner" style="display: none;">
+    <div class="pwa-banner-left">
+      <div class="pwa-banner-icon">📱</div>
+      <div class="pwa-banner-text">
+        <strong>Install TaskFlow</strong>
+        <span>Add to home screen for lightning-fast offline access</span>
+      </div>
+    </div>
+    <div class="pwa-banner-btns">
+      <button class="btn btn-primary btn-sm" id="btn-pwa-install">Install</button>
+      <button class="btn-icon-sm" id="btn-pwa-dismiss">✕</button>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Main JavaScript App Entry -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

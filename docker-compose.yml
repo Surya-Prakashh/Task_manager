@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  taskflow:
+    build: .
+    container_name: taskflow_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - JWT_SECRET=taskflow_docker_secret_key_prod_2026
+    volumes:
+      - ./data:/app/data
