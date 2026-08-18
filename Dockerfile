@@ -14,8 +14,12 @@ EXPOSE 3000
 
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV DATA_DIR=/app/data
 
-# Volume for persistent database
+# Ensure persistent storage data directory exists
+RUN mkdir -p /app/data
+
+# Volume for persistent database storage
 VOLUME ["/app/data"]
 
 CMD ["npm", "start"]

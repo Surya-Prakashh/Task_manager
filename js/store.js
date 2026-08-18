@@ -117,16 +117,69 @@ export class Store {
     };
     this.listeners = [];
     this.isCloudSynced = false;
+    this.isPersistentStorageGranted = false;
+    this.storageEstimate = null;
   }
 
   async init() {
-    // 1. Load Local Cache
+    // 1. Request Browser Persistent Storage (StorageManager API)
+    await this.initPersistentStorage();
+
+    // 2. Load Local Cache
     this.loadLocalData();
 
-    // 2. If logged in, fetch from Cloud DB and sync
+    // 3. If logged in, fetch from Cloud DB and sync
     if (api.isLoggedIn()) {
       await this.syncWithCloud();
     }
+  }
+
+  async initPersistentStorage() {
+    try {
+      if (navigator.storage && navigator.storage.persist) {
+        const isPersisted = await navigator.storage.persisted();
+        if (isPersisted) {
+          this.isPersistentStorageGranted = true;
+          console.log('🔒 Browser storage is permanently persistent');
+        } else {
+          const granted = await navigator.storage.persist();
+          this.isPersistentStorageGranted = granted;
+          if (granted) {
+            console.log('✅ Browser persistent storage permission granted');
+          } else {
+            console.log('ℹ️ Browser is using standard storage mode');
+          }
+        }
+      }
+
+      if (navigator.storage && navigator.storage.estimate) {
+        this.storageEstimate = await navigator.storage.estimate();
+      }
+    } catch (err) {
+      console.warn('StorageManager persistent storage check warning:', err);
+    }
+  }
+
+  async getStorageMetrics() {
+    try {
+      if (navigator.storage && navigator.storage.estimate) {
+        this.storageEstimate = await navigator.storage.estimate();
+      }
+      if (navigator.storage && navigator.storage.persisted) {
+        this.isPersistentStorageGranted = await navigator.storage.persisted();
+      }
+    } catch (e) {}
+
+    return {
+      isPersisted: this.isPersistentStorageGranted,
+      usageBytes: this.storageEstimate?.usage || 0,
+      quotaBytes: this.storageEstimate?.quota || 0,
+      usageKB: Math.round((this.storageEstimate?.usage || 0) / 1024),
+      usageMB: ((this.storageEstimate?.usage || 0) / (1024 * 1024)).toFixed(2),
+      quotaMB: Math.round((this.storageEstimate?.quota || 0) / (1024 * 1024)),
+      tasksCount: this.tasks.length,
+      categoriesCount: this.categories.length
+    };
   }
 
   loadLocalData() {

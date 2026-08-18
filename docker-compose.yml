@@ -10,6 +10,11 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - DATA_DIR=/app/data
       - JWT_SECRET=taskflow_docker_secret_key_prod_2026
     volumes:
-      - ./data:/app/data
+      - taskflow_data:/app/data
+
+volumes:
+  taskflow_data:
+    driver: local

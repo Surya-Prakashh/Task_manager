@@ -133,7 +133,7 @@ class App {
       btnCloseCategoryModal: document.getElementById('btn-close-category-modal'),
       btnCancelCatModal: document.getElementById('btn-cancel-cat-modal'),
 
-      // Backup Modal
+      // Backup Modal & Persistent Storage
       backupModalOverlay: document.getElementById('backup-modal-overlay'),
       btnExportMenu: document.getElementById('btn-export-menu'),
       btnCloseBackupModal: document.getElementById('btn-close-backup-modal'),
@@ -141,6 +141,12 @@ class App {
       btnActionExportCsv: document.getElementById('btn-action-export-csv'),
       importJsonFileInput: document.getElementById('import-json-file-input'),
       btnActionResetDefaults: document.getElementById('btn-action-reset-defaults'),
+      storagePersistIcon: document.getElementById('storage-persist-icon'),
+      storagePersistTitle: document.getElementById('storage-persist-title'),
+      storagePersistBadge: document.getElementById('storage-persist-badge'),
+      storagePersistDesc: document.getElementById('storage-persist-desc'),
+      storageQuotaText: document.getElementById('storage-quota-text'),
+      storageTasksCount: document.getElementById('storage-tasks-count'),
 
       // Shortcuts Modal
       shortcutsModalOverlay: document.getElementById('shortcuts-modal-overlay'),
@@ -847,8 +853,44 @@ class App {
     this.dom.categoryModalOverlay.classList.remove('active');
   }
 
-  openBackupModal() {
+  async openBackupModal() {
     this.dom.backupModalOverlay.classList.add('active');
+    
+    // Update live persistent storage stats
+    try {
+      const metrics = await store.getStorageMetrics();
+      if (this.dom.storagePersistBadge) {
+        if (metrics.isPersisted) {
+          this.dom.storagePersistBadge.textContent = 'Persisted';
+          this.dom.storagePersistBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+          this.dom.storagePersistBadge.style.color = '#10b981';
+          if (this.dom.storagePersistTitle) this.dom.storagePersistTitle.textContent = 'Persistent Storage Active';
+          if (this.dom.storagePersistIcon) this.dom.storagePersistIcon.textContent = '🔒';
+          if (this.dom.storagePersistDesc) this.dom.storagePersistDesc.textContent = 'Your tasks and settings are granted permanent storage mode and protected from browser auto-eviction.';
+        } else {
+          this.dom.storagePersistBadge.textContent = 'Standard';
+          this.dom.storagePersistBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+          this.dom.storagePersistBadge.style.color = '#f59e0b';
+          if (this.dom.storagePersistTitle) this.dom.storagePersistTitle.textContent = 'Standard Local Storage';
+          if (this.dom.storagePersistIcon) this.dom.storagePersistIcon.textContent = '💾';
+          if (this.dom.storagePersistDesc) this.dom.storagePersistDesc.textContent = 'Stored locally on your browser with cloud database synchronization.';
+        }
+      }
+
+      if (this.dom.storageQuotaText) {
+        if (metrics.usageBytes > 0) {
+          this.dom.storageQuotaText.textContent = `Used: ${metrics.usageKB > 1024 ? metrics.usageMB + ' MB' : metrics.usageKB + ' KB'} (Quota: ${metrics.quotaMB} MB)`;
+        } else {
+          this.dom.storageQuotaText.textContent = `Local Storage: Active`;
+        }
+      }
+
+      if (this.dom.storageTasksCount) {
+        this.dom.storageTasksCount.textContent = `Tasks: ${metrics.tasksCount} | Categories: ${metrics.categoriesCount}`;
+      }
+    } catch (e) {
+      console.warn('Error loading storage metrics:', e);
+    }
   }
 
   closeBackupModal() {

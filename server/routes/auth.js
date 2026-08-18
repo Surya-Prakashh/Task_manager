@@ -26,7 +26,7 @@ router.post('/register', async (req, res) => {
     const trimmedEmail = email.toLowerCase().trim();
 
     // Check if user already exists
-    const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(trimmedEmail);
+    const existing = await db.getOne('SELECT id FROM users WHERE email = $1', [trimmedEmail]);
     if (existing) {
       return res.status(400).json({ error: 'An account with this email already exists' });
     }
@@ -37,19 +37,18 @@ router.post('/register', async (req, res) => {
     const userId = randomUUID();
 
     // Insert user
-    db.prepare(`
-      INSERT INTO users (id, email, password_hash, name)
-      VALUES (?, ?, ?, ?)
-    `).run(userId, trimmedEmail, passwordHash, name.trim());
+    await db.execute(
+      'INSERT INTO users (id, email, password_hash, name) VALUES ($1, $2, $3, $4)',
+      [userId, trimmedEmail, passwordHash, name.trim()]
+    );
 
     // Seed default categories for new user
-    const insertCat = db.prepare(`
-      INSERT INTO categories (id, user_id, name, color, icon)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    DEFAULT_CATEGORIES.forEach(cat => {
-      insertCat.run(randomUUID(), userId, cat.name, cat.color, cat.icon);
-    });
+    for (const cat of DEFAULT_CATEGORIES) {
+      await db.execute(
+        'INSERT INTO categories (id, user_id, name, color, icon) VALUES ($1, $2, $3, $4, $5)',
+        [randomUUID(), userId, cat.name, cat.color, cat.icon]
+      );
+    }
 
     const user = { id: userId, email: trimmedEmail, name: name.trim() };
     const token = generateToken(user);
@@ -75,7 +74,7 @@ router.post('/login', async (req, res) => {
     }
 
     const trimmedEmail = email.toLowerCase().trim();
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(trimmedEmail);
+    const user = await db.getOne('SELECT * FROM users WHERE email = $1', [trimmedEmail]);
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid email or password' });

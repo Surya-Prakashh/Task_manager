@@ -69,11 +69,39 @@ Open **`http://localhost:3000`** in your browser.
 
 ---
 
-## 🐳 Running with Docker
+## 🐳 Running with Docker (Persistent Storage)
+
+TaskFlow uses named persistent volumes (`taskflow_data`) so all your tasks, categories, and user data survive container restarts, rebuilds, and updates:
 
 ```bash
+# Start container with persistent volume
 docker-compose up -d --build
+
+# Inspect persistent volume data
+docker volume inspect taskflow_taskflow_data
 ```
+
+---
+
+## 🔒 Persistent Storage Architecture
+
+TaskFlow implements a multi-tier persistent storage design:
+
+1. **Browser PWA Persistent Storage (`StorageManager API`)**:
+   - Automatically requests permanent client persistence via `navigator.storage.persist()`.
+   - Protects LocalStorage, CacheStorage, and offline data from automatic browser eviction when disk space is constrained.
+   - Live storage quota inspection and persistent status reporting in the Backup & Data modal.
+
+2. **SQLite Write-Ahead Logging (WAL) & Disk Synchronization**:
+   - Database operations use WAL mode (`journal_mode = WAL`) and atomic disk synchronization (`synchronous = NORMAL`).
+   - Foreign key constraints enabled (`foreign_keys = ON`) with busy timeouts to avoid database lock contention.
+   - Clean shutdown traps (`SIGINT`, `SIGTERM`) execute WAL checkpoints (`wal_checkpoint(TRUNCATE)`) before process termination to guarantee zero data loss.
+
+3. **Container Persistent Volume**:
+   - Docker container persists SQLite database directly to the dedicated `taskflow_data` volume mounted at `/app/data` (or customizable via `DATA_DIR`).
+
+4. **Multi-Device Cloud Synchronization**:
+   - Fullstack REST API allows instant cloud synchronization across all registered devices (PostgreSQL/SQLite).
 
 ---
 

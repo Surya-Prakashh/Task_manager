@@ -511,7 +511,24 @@
       </div>
 
       <div class="modal-body backup-modal-body">
-        <p class="backup-note">Your data is securely persisted on your local browser. Export JSON backups anytime or export CSV files for spreadsheets.</p>
+        <div class="storage-status-card" id="storage-status-card" style="margin-bottom: 1rem; padding: 0.85rem; border-radius: 10px; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.35rem;">
+            <strong style="font-size: 0.88rem; display: flex; align-items: center; gap: 0.4rem;">
+              <span id="storage-persist-icon">🔒</span>
+              <span id="storage-persist-title">Persistent Storage Active</span>
+            </strong>
+            <span class="badge" id="storage-persist-badge" style="font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; background: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: 600;">Persisted</span>
+          </div>
+          <p id="storage-persist-desc" style="font-size: 0.78rem; color: var(--text-secondary, #94a3b8); margin: 0; line-height: 1.4;">
+            Your tasks and settings are protected from browser auto-eviction and persist safely on your device.
+          </p>
+          <div id="storage-usage-info" style="font-size: 0.74rem; color: var(--text-muted, #64748b); margin-top: 0.4rem; display: flex; gap: 1rem;">
+            <span id="storage-quota-text">Quota: Calculating...</span>
+            <span id="storage-tasks-count">Tasks: 0</span>
+          </div>
+        </div>
+
+        <p class="backup-note">Your data is securely persisted on your local storage and cloud database. Export JSON backups anytime or export CSV files for spreadsheets.</p>
         
         <div class="backup-actions-list">
           <button class="btn btn-outline btn-block" id="btn-action-export-json">
