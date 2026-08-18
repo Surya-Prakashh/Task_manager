@@ -41,16 +41,25 @@ class ApiService {
         }
       });
 
-      if (response.status === 401 || response.status === 403) {
-        // Token expired
-        this.logout();
-        throw new Error('Session expired. Please log in again.');
+      let data = {};
+      try {
+        data = await response.json();
+      } catch (e) {
+        data = { error: `Server error (${response.status})` };
       }
 
-      const data = await response.json();
       if (!response.ok) {
+        const isAuthRoute = endpoint.startsWith('/auth/login') || endpoint.startsWith('/auth/register');
+        
+        if ((response.status === 401 || response.status === 403) && !isAuthRoute) {
+          // Token expired on an authenticated API request
+          this.logout();
+          throw new Error('Your session has expired. Please sign in again.');
+        }
+
         throw new Error(data.error || `Request failed with status ${response.status}`);
       }
+
       return data;
     } catch (err) {
       console.warn(`API Error [${endpoint}]:`, err.message);

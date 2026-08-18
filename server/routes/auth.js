@@ -77,12 +77,12 @@ router.post('/login', async (req, res) => {
     const user = await db.getOne('SELECT * FROM users WHERE email = $1', [trimmedEmail]);
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid email or password. If you do not have an account, please switch to Create Account.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Invalid password. Please try again or reset your credentials.' });
     }
 
     const userPayload = { id: user.id, email: user.email, name: user.name };

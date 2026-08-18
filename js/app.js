@@ -1016,12 +1016,14 @@ class App {
       this.dom.authModalTitle.textContent = 'Create TaskFlow Account';
       this.dom.authNameGroup.style.display = 'block';
       this.dom.btnAuthSubmit.textContent = 'Create Account & Sync';
+      if (this.dom.authPasswordInput) this.dom.authPasswordInput.autocomplete = 'new-password';
     } else {
       this.dom.tabAuthLogin.classList.add('active');
       this.dom.tabAuthRegister.classList.remove('active');
       this.dom.authModalTitle.textContent = 'Sign In to TaskFlow';
       this.dom.authNameGroup.style.display = 'none';
       this.dom.btnAuthSubmit.textContent = 'Sign In & Sync';
+      if (this.dom.authPasswordInput) this.dom.authPasswordInput.autocomplete = 'current-password';
     }
   }
 
@@ -1071,7 +1073,7 @@ class App {
   }
 
   async handleAuthSubmit() {
-    const email = this.dom.authEmailInput.value.trim();
+    const email = this.dom.authEmailInput.value.trim().toLowerCase();
     const password = this.dom.authPasswordInput.value;
     const name = this.dom.authNameInput ? this.dom.authNameInput.value.trim() : '';
 
