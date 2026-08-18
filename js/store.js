@@ -512,7 +512,11 @@ export class Store {
         return new Date(b.createdAt) - new Date(a.createdAt);
       }
 
-      return (a.order || 0) - (b.order || 0);
+      if ((a.order || 0) !== (b.order || 0)) {
+        return (a.order || 0) - (b.order || 0);
+      }
+
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     });
   }
 

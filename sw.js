@@ -1,15 +1,16 @@
-const CACHE_NAME = 'taskflow-v1';
+const CACHE_NAME = 'taskflow-v2';
 const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './manifest.webmanifest',
-  './css/style.css',
-  './js/app.js',
-  './js/store.js',
-  './js/views.js',
-  './js/notifications.js',
-  './js/timer.js',
-  './icons/icon.svg',
+  '/',
+  '/index.html',
+  '/manifest.webmanifest',
+  '/css/style.css',
+  '/js/app.js',
+  '/js/store.js',
+  '/js/views.js',
+  '/js/notifications.js',
+  '/js/timer.js',
+  '/js/api.js',
+  '/icons/icon.svg',
   'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap'
 ];
 
@@ -24,13 +25,14 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate Event
+// Activate Event - Clean up old caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('Purging old service worker cache:', key);
             return caches.delete(key);
           }
         })
@@ -39,14 +41,19 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch Event - Stale While Revalidate / Cache First
+// Fetch Event - Never cache API requests, Network-First with Cache Fallback for assets
 self.addEventListener('fetch', (event) => {
-  // Only cache GET requests
-  if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
 
+  // 1. Never intercept or cache API requests
+  if (url.pathname.startsWith('/api') || event.request.method !== 'GET') {
+    return;
+  }
+
+  // 2. Network-First strategy with Cache Fallback for dynamic app assets
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request).then((networkResponse) => {
+    fetch(event.request)
+      .then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
           const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -54,12 +61,16 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      }).catch(() => {
-        // Return cached if network fails
-        return cachedResponse;
-      });
-
-      return cachedResponse || fetchPromise;
-    })
+      })
+      .catch(() => {
+        // Fallback to cache if network fails (offline)
+        return caches.match(event.request).then((cached) => {
+          if (cached) return cached;
+          if (event.request.mode === 'navigate') {
+            return caches.match('/index.html');
+          }
+          return null;
+        });
+      })
   );
 });

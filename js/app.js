@@ -608,16 +608,22 @@ class App {
           }
           this.showToast(`Completed: ${updated.title}`, 'success');
         }
+        this.render();
+        this.updateSidebarStats();
       },
       onToggleSubtask: (taskId, subtaskId) => {
         store.toggleSubtask(taskId, subtaskId);
         sounds.playClick();
+        this.render();
+        this.updateSidebarStats();
       },
       onTogglePin: async (id) => {
         const updated = await store.togglePin(id);
         if (updated) {
           this.showToast(updated.pinned ? '📌 Pinned task' : 'Unpinned task', 'info');
         }
+        this.render();
+        this.updateSidebarStats();
       },
       onEditTask: (task) => {
         this.openTaskModal(task);
@@ -627,6 +633,8 @@ class App {
         if (deleted) {
           this.showToast(`Deleted: ${deleted.title}`, 'info');
         }
+        this.render();
+        this.updateSidebarStats();
       },
       onFocusTask: (task) => {
         this.timer.attachTask(task);
@@ -879,6 +887,8 @@ class App {
     }
 
     this.closeTaskModal();
+    this.render();
+    this.updateSidebarStats();
   }
 
   // ==========================================
