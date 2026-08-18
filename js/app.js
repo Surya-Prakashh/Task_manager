@@ -15,6 +15,7 @@ class App {
     this.selectedCatColor = '#6366f1';
     this.deferredInstallPrompt = null;
     this.authMode = 'login'; // 'login' | 'register'
+    this.crossDeviceSyncInterval = null;
 
     // Initialize Timer
     this.timer = new FocusTimer(
@@ -39,6 +40,9 @@ class App {
     // Start background reminder checker
     notifications.startReminderChecker(() => store.tasks);
 
+    // Cross-Device Sync Setup
+    this.setupCrossDeviceSync();
+
     // Subscribe to store updates
     store.subscribe(() => {
       this.render();
@@ -46,6 +50,35 @@ class App {
     });
 
     this.updateSidebarStats();
+  }
+
+  setupCrossDeviceSync() {
+    // 1. Sync on tab / device visibility change (e.g. switching back to browser or unlocking device)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && api.isLoggedIn()) {
+        store.syncWithCloud();
+      }
+    });
+
+    // 2. Sync on window focus
+    window.addEventListener('focus', () => {
+      if (api.isLoggedIn()) {
+        store.syncWithCloud();
+      }
+    });
+
+    // 3. Sync on network reconnection
+    window.addEventListener('online', () => {
+      if (api.isLoggedIn()) {
+        this.showToast('📶 Back online! Syncing data...', 'info');
+        store.syncWithCloud();
+      }
+    });
+
+    // 4. Start periodic background polling if already logged in
+    if (api.isLoggedIn()) {
+      this.startCrossDeviceSync();
+    }
   }
 
   cacheDom() {
@@ -262,15 +295,23 @@ class App {
     this.dom.btnSyncNow?.addEventListener('click', async () => {
       this.dom.userDropdownMenu.style.display = 'none';
       this.showToast('Syncing with database...', 'info');
-      await store.syncWithCloud();
-      this.showToast('✅ Cloud sync complete!', 'success');
+      const res = await store.syncWithCloud(true);
+      if (res && res.success) {
+        this.showToast(`✅ Cloud synced (${res.count} tasks)`, 'success');
+      } else {
+        this.showToast('⚠️ Sync completed with local cache', 'info');
+      }
     });
 
     this.dom.btnLogout?.addEventListener('click', () => {
+      this.stopCrossDeviceSync();
       api.logout();
+      store.clearUserDataOnLogout();
       this.dom.userDropdownMenu.style.display = 'none';
       this.updateAuthUI();
-      this.showToast('Signed out of cloud sync', 'info');
+      this.populateCategories();
+      this.render();
+      this.showToast('Signed out of cloud account', 'info');
     });
 
     document.addEventListener('click', (e) => {
@@ -965,8 +1006,137 @@ class App {
   }
 
   // ==========================================
-  // Toast Notifications
+  // Cross-Device Cloud Authentication & Sync
   // ==========================================
+  setAuthMode(mode) {
+    this.authMode = mode;
+    if (mode === 'register') {
+      this.dom.tabAuthRegister.classList.add('active');
+      this.dom.tabAuthLogin.classList.remove('active');
+      this.dom.authModalTitle.textContent = 'Create TaskFlow Account';
+      this.dom.authNameGroup.style.display = 'block';
+      this.dom.btnAuthSubmit.textContent = 'Create Account & Sync';
+    } else {
+      this.dom.tabAuthLogin.classList.add('active');
+      this.dom.tabAuthRegister.classList.remove('active');
+      this.dom.authModalTitle.textContent = 'Sign In to TaskFlow';
+      this.dom.authNameGroup.style.display = 'none';
+      this.dom.btnAuthSubmit.textContent = 'Sign In & Sync';
+    }
+  }
+
+  openAuthModal() {
+    this.setAuthMode(this.authMode || 'login');
+    this.dom.authModalOverlay.classList.add('active');
+    setTimeout(() => {
+      if (this.authMode === 'register') {
+        this.dom.authNameInput?.focus();
+      } else {
+        this.dom.authEmailInput?.focus();
+      }
+    }, 50);
+  }
+
+  closeAuthModal() {
+    this.dom.authModalOverlay.classList.remove('active');
+    this.dom.authForm.reset();
+  }
+
+  updateAuthUI() {
+    if (api.isLoggedIn()) {
+      const user = api.currentUser || {};
+      const firstName = (user.name || 'User').split(' ')[0];
+      if (this.dom.authBtnLabel) {
+        this.dom.authBtnLabel.textContent = firstName;
+      }
+      if (this.dom.dropdownUserName) {
+        this.dom.dropdownUserName.textContent = user.name || 'User';
+      }
+      if (this.dom.dropdownUserEmail) {
+        this.dom.dropdownUserEmail.textContent = user.email || '';
+      }
+      if (this.dom.btnAuthTrigger) {
+        this.dom.btnAuthTrigger.classList.add('btn-user-logged-in');
+        this.dom.btnAuthTrigger.title = `Signed in as ${user.name} (${user.email}) - Click for options`;
+      }
+    } else {
+      if (this.dom.authBtnLabel) {
+        this.dom.authBtnLabel.textContent = 'Sign In / Sync';
+      }
+      if (this.dom.btnAuthTrigger) {
+        this.dom.btnAuthTrigger.classList.remove('btn-user-logged-in');
+        this.dom.btnAuthTrigger.title = 'Sign in to sync tasks across all your devices';
+      }
+    }
+  }
+
+  async handleAuthSubmit() {
+    const email = this.dom.authEmailInput.value.trim();
+    const password = this.dom.authPasswordInput.value;
+    const name = this.dom.authNameInput ? this.dom.authNameInput.value.trim() : '';
+
+    if (!email || !password) {
+      this.showToast('Please enter both email and password', 'warning');
+      return;
+    }
+
+    this.dom.btnAuthSubmit.disabled = true;
+    const originalText = this.dom.btnAuthSubmit.textContent;
+    this.dom.btnAuthSubmit.textContent = 'Connecting...';
+
+    try {
+      if (this.authMode === 'register') {
+        if (!name) {
+          this.showToast('Please enter your full name', 'warning');
+          this.dom.btnAuthSubmit.disabled = false;
+          this.dom.btnAuthSubmit.textContent = originalText;
+          return;
+        }
+        await api.register(name, email, password);
+        this.showToast(`🎉 Account created! Welcome, ${name}`, 'success');
+      } else {
+        const res = await api.login(email, password);
+        this.showToast(`👋 Welcome back, ${res.user.name}!`, 'success');
+      }
+
+      this.closeAuthModal();
+      this.updateAuthUI();
+
+      // Pull canonical cloud state for the logged-in user
+      this.showToast('🔄 Synchronizing your tasks across devices...', 'info');
+      const syncRes = await store.syncWithCloud(true);
+
+      this.populateCategories();
+      this.render();
+      this.startCrossDeviceSync();
+
+      if (syncRes && syncRes.success) {
+        this.showToast(`✅ Cross-device sync complete (${syncRes.count} tasks)`, 'success');
+      }
+    } catch (err) {
+      this.showToast(`❌ ${err.message || 'Authentication failed'}`, 'error');
+    } finally {
+      this.dom.btnAuthSubmit.disabled = false;
+      this.dom.btnAuthSubmit.textContent = originalText;
+    }
+  }
+
+  startCrossDeviceSync() {
+    this.stopCrossDeviceSync();
+    // Poll every 8 seconds when active to seamlessly mirror changes across devices
+    this.crossDeviceSyncInterval = setInterval(async () => {
+      if (api.isLoggedIn() && document.visibilityState !== 'hidden') {
+        await store.syncWithCloud();
+      }
+    }, 8000);
+  }
+
+  stopCrossDeviceSync() {
+    if (this.crossDeviceSyncInterval) {
+      clearInterval(this.crossDeviceSyncInterval);
+      this.crossDeviceSyncInterval = null;
+    }
+  }
   showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;

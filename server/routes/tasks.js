@@ -205,7 +205,7 @@ router.post('/sync', async (req, res) => {
       `;
 
       for (const t of localTasks) {
-        const taskId = (t.id && !t.id.startsWith('task_')) ? t.id : randomUUID();
+        const taskId = t.id || randomUUID();
         await db.execute(syncQuery, [
           taskId,
           req.user.id,

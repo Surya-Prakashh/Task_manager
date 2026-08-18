@@ -215,25 +215,55 @@ export class Store {
     }
   }
 
-  async syncWithCloud() {
-    try {
-      // Sync tasks
-      const serverTasks = await api.syncTasks(this.tasks);
-      this.tasks = serverTasks;
-      this.saveLocalTasks();
+  async syncWithCloud(force = false) {
+    if (!api.isLoggedIn()) {
+      this.isCloudSynced = false;
+      return;
+    }
 
-      // Fetch categories
+    try {
+      // 1. Process any queued offline creations
+      const pendingTasks = this.tasks.filter(t => t.pendingSync && !t.id.startsWith('sample-'));
+      for (const pt of pendingTasks) {
+        try {
+          const { pendingSync, ...payload } = pt;
+          await api.createTask(payload);
+          delete pt.pendingSync;
+        } catch (e) {
+          console.warn('Queue sync task retry error:', e);
+        }
+      }
+
+      // 2. Fetch canonical cloud tasks from database
+      const serverTasks = await api.fetchTasks();
+      
+      // Determine if tasks changed
+      const localHash = JSON.stringify(this.tasks.map(t => ({ id: t.id, status: t.status, title: t.title, subtasks: t.subtasks, priority: t.priority, category: t.category, pinned: t.pinned, dueDate: t.dueDate, dueTime: t.dueTime })));
+      const serverHash = JSON.stringify(serverTasks.map(t => ({ id: t.id, status: t.status, title: t.title, subtasks: t.subtasks, priority: t.priority, category: t.category, pinned: t.pinned, dueDate: t.dueDate, dueTime: t.dueTime })));
+
+      if (force || localHash !== serverHash || (this.tasks.length > 0 && this.tasks[0].id.startsWith('sample-'))) {
+        this.tasks = serverTasks;
+        this.saveLocalTasks();
+      }
+
+      // 3. Fetch canonical categories from database
       const serverCategories = await api.fetchCategories();
       if (serverCategories && serverCategories.length > 0) {
-        this.categories = serverCategories;
-        this.saveLocalCategories();
+        const localCatHash = JSON.stringify(this.categories);
+        const serverCatHash = JSON.stringify(serverCategories);
+        if (force || localCatHash !== serverCatHash) {
+          this.categories = serverCategories;
+          this.saveLocalCategories();
+        }
       }
 
       this.isCloudSynced = true;
       this.notify();
+      return { success: true, count: this.tasks.length };
     } catch (err) {
-      console.warn('Cloud sync offline / failed, using local storage:', err);
+      console.warn('Cloud sync offline / failed, using local cache:', err);
       this.isCloudSynced = false;
+      return { success: false, error: err.message };
     }
   }
 
@@ -267,7 +297,7 @@ export class Store {
 
   async addTask(taskData) {
     const newTask = {
-      id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+      id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : ('task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)),
       title: taskData.title.trim(),
       description: (taskData.description || '').trim(),
       category: taskData.category || 'Personal',
@@ -621,6 +651,11 @@ export class Store {
     this.categories = [...DEFAULT_CATEGORIES];
     this.saveLocalTasks();
     this.saveLocalCategories();
+  }
+
+  clearUserDataOnLogout() {
+    this.isCloudSynced = false;
+    this.resetToDefault();
   }
 }
 
